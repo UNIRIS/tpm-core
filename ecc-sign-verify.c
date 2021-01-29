@@ -129,6 +129,7 @@ int main() {
     if (r != TSS2_RC_SUCCESS){
         printf("\nError");
         exit(1);
+    }
 
     TPM2B_NAME *nameKeySign = NULL;
     TPM2B_NAME *keyQualifiedName = NULL;
