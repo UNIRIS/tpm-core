@@ -13,14 +13,14 @@ EllipticCurve = collections.namedtuple('EllipticCurve', 'name p a b g n h')
 curve = EllipticCurve(
     'NIST_P256',
     # Field characteristic.
-    p=0xffffffff0001000000000000ffffffffffffffffffffffff,
+    p=0xffffffff00000001000000000000000000000000ffffffffffffffffffffffff,
     # Curve coefficients.
-    a=0xffffffff0001000000000000fffffffffffffffffffffffc,
-    b=0x5ac635d8aa3a93e7b3ebbd55769886bc651d6b0cc53b0f63bce3c3e27d2604b,
+    a=0xffffffff00000001000000000000000000000000fffffffffffffffffffffffc,
+    b=0x5ac635d8aa3a93e7b3ebbd55769886bc651d06b0cc53b0f63bce3c3e27d2604b,
     # Base point.
-    g=(0x6b17d1f2e12c4247f8bce6e563a440f27737d812deb33a0f4a13945d898c296, 0x4fe342e2fe1a7f9b8ee7eb4a7cf9e162bce33576b315ececbb6406837bf51f5),
+    g=(0x6b17d1f2e12c4247f8bce6e563a440f277037d812deb33a0f4a13945d898c296, 0x4fe342e2fe1a7f9b8ee7eb4a7c0f9e162bce33576b315ececbb6406837bf51f5),
     # Subgroup order.
-    n=0xffffffff0000ffffffffffffffffbce6faada7179e84f3b9cac2fc632551,
+    n=0xffffffff00000000ffffffffffffffffbce6faada7179e84f3b9cac2fc632551,
     # Subgroup cofactor.
     h=0x1
 )
@@ -232,7 +232,8 @@ msg = "UNIRIS".encode('utf')
 # print('Signature: (0x{:x}{:x})'.format(*signature))
 # print('Verification signature:', verify_signature(public, msg, signature))
 
-public_key = (0x5c7c9b462e24790f9d040929b31476b2d6133fbac54c1b11cff877b8d9339da, 0x7f2927b5a745262c4fd8a777ff5f31520df50462a59c251ee60d39aaf1ffaec)
-signature2 = (0xdfaa3dd7dcd79e5ea39ece5a2d213a1d15b8dfce873016302710c38ee936bb, 0xa973735a1e3dcb80aacdc8fc8f2662d70c1ad5541a99547780eb15386fb)
+public_key = (0x5c7c09b462e24790f9d040929b31476b2d6133fbac54c1b11cff877b8d9339da, 0x7f2927b5a745262c4fd8a7077ff5f31520df50462a59c251ee60d39aaf1ffaec)
+signature2 = (0x8cf58081aa327e99a487774236f81b989d0e16542988f08f7c12bedde1dbf8e8, 0x73414dddc44318d0810bab71fc9fb640379ca1e4f0713d177a7402625ca076fe)
 
 print('Verification signature:', verify_signature(public_key, msg, signature2))
+
