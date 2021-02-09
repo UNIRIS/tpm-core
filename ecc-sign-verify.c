@@ -133,34 +133,31 @@ int main() {
 
     printf("\nECC Parameters:\nP = ");
     for(int v=0; v<(*parameters).p.size; v++){
-        printf("%x", (*parameters).p.buffer[v]);
+        printf("%x ", (*parameters).p.buffer[v]);
     }
-
     printf("\nA = ");
     for(int v=0; v<(*parameters).a.size; v++){
-        printf("%x", (*parameters).a.buffer[v]);
+        printf("%x ", (*parameters).a.buffer[v]);
     }
-
     printf("\nB = ");
     for(int v=0; v<(*parameters).b.size; v++){
-        printf("%x", (*parameters).b.buffer[v]);
+        printf("%x ", (*parameters).b.buffer[v]);
     }
-
     printf("\nGx = ");
     for(int v=0; v<(*parameters).gX.size; v++){
-        printf("%x", (*parameters).gX.buffer[v]);
+        printf("%x ", (*parameters).gX.buffer[v]);
     }
     printf("\nGy = ");
     for(int v=0; v<(*parameters).gY.size; v++){
-        printf("%x", (*parameters).gY.buffer[v]);
+        printf("%x ", (*parameters).gY.buffer[v]);
     }
     printf("\nN = ");
     for(int v=0; v<(*parameters).n.size; v++){
-        printf("%x", (*parameters).n.buffer[v]);
+        printf("%x ", (*parameters).n.buffer[v]);
     }
     printf("\nH = ");
     for(int v=0; v<(*parameters).h.size; v++){
-        printf("%x", (*parameters).h.buffer[v]);
+        printf("%x ", (*parameters).h.buffer[v]);
     }
 
 
@@ -178,11 +175,11 @@ int main() {
 
     printf("\n\nPublic Key:\nX = ");
     for(int v=0; v<(*outPublic).publicArea.unique.ecc.x.size; v++){
-	printf("%x", (*outPublic).publicArea.unique.ecc.x.buffer[v]);
+	printf("%x ", (*outPublic).publicArea.unique.ecc.x.buffer[v]);
     }
     printf("\nY = ");
     for(int v=0; v<(*outPublic).publicArea.unique.ecc.y.size; v++){
-        printf("%x", (*outPublic).publicArea.unique.ecc.y.buffer[v]);
+        printf("%x ", (*outPublic).publicArea.unique.ecc.y.buffer[v]);
     }
 
     TPM2B_NAME *nameKeySign = NULL;
@@ -233,11 +230,11 @@ int main() {
 
    printf("\n\nSignature:\nR = ");
    for(int i=0; i<(*signature).signature.ecdsa.signatureR.size;i++){
-	printf("%x",(*signature).signature.ecdsa.signatureR.buffer[i]);
+	printf("%x ",(*signature).signature.ecdsa.signatureR.buffer[i]);
     }
    printf("\nS = ");
    for(int i=0; i<(*signature).signature.ecdsa.signatureS.size;i++){
-        printf("%x",(*signature).signature.ecdsa.signatureS.buffer[i]);
+        printf("%x ",(*signature).signature.ecdsa.signatureS.buffer[i]);
     }
    printf("\n\n");
 
