@@ -41,7 +41,7 @@ int main() {
         }
     };
 
-//TPMA_OBJECT_RESTRICTED |
+//TPMA_OBJECT_RESTRICTED -- For hash created by TPM
 
     TPM2B_PUBLIC inPublicECC = {
         .size = 0,
