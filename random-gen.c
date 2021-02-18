@@ -8,7 +8,7 @@
 
 
 #include <stdio.h>
-#include <stdlib>
+#include <stdlib.h>
 #include <tss2/tss2_esys.h>
 
 int main() {
