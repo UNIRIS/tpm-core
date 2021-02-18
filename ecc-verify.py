@@ -9,7 +9,6 @@ import uuid
 
 EllipticCurve = collections.namedtuple('EllipticCurve', 'name p a b g n h')
 
-# privKey = 0x0b12b5986f97b95c4419d0f6172a69409b1c651f3bdb27b8
 curve = EllipticCurve(
     'NIST_P256',
     # Field characteristic.
