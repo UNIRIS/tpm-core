@@ -15,16 +15,25 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define ASN1_SEQ 0x30
+#define ASN1_INT 0x02
+#define ASN1_OID 0x06
+#define ASN1_PrintableString 0x13
+#define ASN1_BitString 0x03
+#define PRIME_LEN 32
+
 typedef unsigned char BYTE;
 typedef unsigned short INT;
-BYTE pubKeyASN[4 + 9 + 10 + 4 + 32 + 32];
+
+BYTE pubKeyASN[4 + 9 + 10 + 4 + PRIME_LEN + PRIME_LEN];
+BYTE sigEccASN[2 + 2 + PRIME_LEN + 2 + PRIME_LEN + 2];
 
 BYTE *keyToASN(BYTE *x, INT sizeX, BYTE *y, INT sizeY, INT *asnKeySize)
 {
-    BYTE asnHeader[] = {0x30, 0x59, 0x30, 0x13};
-    BYTE keyType[] = {0x06, 0x07, 0x2a, 0x86, 0x48, 0xce, 0x3d, 0x02, 0x01};
-    BYTE curveType[] = {0x06, 0x08, 0x2a, 0x86, 0x48, 0xce, 0x3d, 0x03, 0x01, 0x07};
-    BYTE pubKeyHeader[] = {0x03, 0x42, 0x00, 0x04};
+    BYTE asnHeader[] = {ASN1_SEQ, 0x59, ASN1_SEQ, ASN1_PrintableString};
+    BYTE keyType[] = {ASN1_OID, 0x07, 0x2a, 0x86, 0x48, 0xce, 0x3d, 0x02, 0x01};
+    BYTE curveType[] = {ASN1_OID, 0x08, 0x2a, 0x86, 0x48, 0xce, 0x3d, 0x03, 0x01, 0x07};
+    BYTE pubKeyHeader[] = {ASN1_BitString, 0x42, 0x00, 0x04};
 
     int index = 0;
     memcpy(pubKeyASN + index, asnHeader, sizeof(asnHeader));
@@ -47,6 +56,52 @@ BYTE *keyToASN(BYTE *x, INT sizeX, BYTE *y, INT sizeY, INT *asnKeySize)
 
     *asnKeySize = index;
     return pubKeyASN;
+}
+
+BYTE *signToASN(BYTE *r, INT sizeR, BYTE *s, INT sizeS, INT *asnSignSize)
+{
+
+    int index = 0;
+    sigEccASN[index++] = ASN1_SEQ;
+
+    int asnLen = (PRIME_LEN * 2) + 4;
+    if (r[0] > 127) // check MSB, R needs padding to remain positive
+        asnLen++;
+    if (s[0] > 127) // check MSB, S needs padding to remain positive
+        asnLen++;
+    /*
+	if(asnLen > 127)
+		sigEccASN[index++] = 0x81;
+    */
+    sigEccASN[index++] = asnLen;
+
+    // R value
+    sigEccASN[index++] = ASN1_INT;
+    if (r[0] > 127)
+    {
+        sigEccASN[index++] = PRIME_LEN + 1;
+        sigEccASN[index++] = 0x00; // Extra byte to ensure R remains positive
+    }
+    else
+        sigEccASN[index++] = PRIME_LEN;
+    memcpy(sigEccASN + index, r, PRIME_LEN);
+    index += PRIME_LEN;
+
+    // S value
+    sigEccASN[index++] = ASN1_INT;
+    if (s[0] > 127)
+    {
+        sigEccASN[index++] = PRIME_LEN + 1;
+        sigEccASN[index++] = 0x00; // Extra byte to ensure S remains positive
+    }
+    else
+        sigEccASN[index++] = PRIME_LEN;
+    memcpy(sigEccASN + index, s, PRIME_LEN);
+    index += PRIME_LEN;
+
+    *asnSignSize = index;
+
+    return sigEccASN;
 }
 
 int main()
@@ -190,7 +245,7 @@ int main()
         printf("\nError: Primary Key Creation Failed\n");
         exit(1);
     }
-
+    /*
     printf("\n\nPublic Key:\nX = ");
     for (int v = 0; v < (*outPublic).publicArea.unique.ecc.x.size; v++)
     {
@@ -201,7 +256,7 @@ int main()
     {
         printf("%02x ", (*outPublic).publicArea.unique.ecc.y.buffer[v]);
     }
-
+    */
     INT asnKeySize = 0;
     BYTE *asnkey = keyToASN(outPublic->publicArea.unique.ecc.x.buffer,
                             outPublic->publicArea.unique.ecc.x.size,
@@ -261,7 +316,7 @@ int main()
         printf("\nError: ECC Signing Failed\n");
         exit(1);
     }
-
+    /*
     printf("\n\nSignature:\nR = ");
     for (int i = 0; i < (*signature).signature.ecdsa.signatureR.size; i++)
     {
@@ -271,6 +326,19 @@ int main()
     for (int i = 0; i < (*signature).signature.ecdsa.signatureS.size; i++)
     {
         printf("%02x ", (*signature).signature.ecdsa.signatureS.buffer[i]);
+    }
+    */
+    INT asnSignSize = 0;
+    BYTE *asnsign = signToASN(signature->signature.ecdsa.signatureR.buffer,
+                              signature->signature.ecdsa.signatureR.size,
+                              signature->signature.ecdsa.signatureS.buffer,
+                              signature->signature.ecdsa.signatureS.size,
+                              &asnSignSize);
+
+    printf("\n\nECC Signature (ASN.1 DER) = \n");
+    for (int v = 0; v < asnSignSize; v++)
+    {
+        printf("%02x", asnsign[v]);
     }
     printf("\n\n");
 
