@@ -1,4 +1,4 @@
-/* Creates a primary ECC key and signs a static hash of 20 bytes,
+/* Creates a primary ECC key and signs a static hash of 20 BYTEs,
    finally verifies the signature.
    Executes:
    Esys_Initialize()
@@ -13,16 +13,53 @@
 #include <stdio.h>
 #include <tss2/tss2_esys.h>
 #include <stdlib.h>
+#include <string.h>
 
-int main() {
+typedef unsigned char BYTE;
+typedef unsigned short INT;
+BYTE pubKeyASN[4 + 9 + 10 + 4 + 32 + 32];
+
+BYTE *keyToASN(BYTE *x, INT sizeX, BYTE *y, INT sizeY, INT *asnKeySize)
+{
+    BYTE asnHeader[] = {0x30, 0x59, 0x30, 0x13};
+    BYTE keyType[] = {0x06, 0x07, 0x2a, 0x86, 0x48, 0xce, 0x3d, 0x02, 0x01};
+    BYTE curveType[] = {0x06, 0x08, 0x2a, 0x86, 0x48, 0xce, 0x3d, 0x03, 0x01, 0x07};
+    BYTE pubKeyHeader[] = {0x03, 0x42, 0x00, 0x04};
+
+    int index = 0;
+    memcpy(pubKeyASN + index, asnHeader, sizeof(asnHeader));
+    index += sizeof(asnHeader);
+
+    memcpy(pubKeyASN + index, keyType, sizeof(keyType));
+    index += sizeof(keyType);
+
+    memcpy(pubKeyASN + index, curveType, sizeof(curveType));
+    index += sizeof(curveType);
+
+    memcpy(pubKeyASN + index, pubKeyHeader, sizeof(pubKeyHeader));
+    index += sizeof(pubKeyHeader);
+
+    memcpy(pubKeyASN + index, x, sizeX);
+    index += sizeX;
+
+    memcpy(pubKeyASN + index, y, sizeY);
+    index += sizeY;
+
+    *asnKeySize = index;
+    return pubKeyASN;
+}
+
+int main()
+{
     TSS2_RC r;
 
     /* Initialize the ESAPI context */
     ESYS_CONTEXT *esys_context;
     r = Esys_Initialize(&esys_context, NULL, NULL);
 
-    if (r != TSS2_RC_SUCCESS){
-        printf("\nError: Esys_Initialize\n");
+    if (r != TSS2_RC_SUCCESS)
+    {
+        printf("\nError: Esys Initialization Failed\n");
         exit(1);
     }
 
@@ -30,18 +67,12 @@ int main() {
         .size = 0,
         .sensitive = {
             .userAuth = {
-                 .size = 0,
-                 .buffer = {0}
-                 ,
-             },
-            .data = {
-                 .size = 0,
-                 .buffer = {0}
-             }
-        }
-    };
+                .size = 0,
+                .buffer = {0},
+            },
+            .data = {.size = 0, .buffer = {0}}}};
 
-//TPMA_OBJECT_RESTRICTED -- For hash created by TPM
+    //TPMA_OBJECT_RESTRICTED -- For hash created by TPM
 
     TPM2B_PUBLIC inPublicECC = {
         .size = 0,
@@ -54,38 +85,22 @@ int main() {
                                  TPMA_OBJECT_FIXEDPARENT |
                                  TPMA_OBJECT_SENSITIVEDATAORIGIN),
             .authPolicy = {
-                 .size = 0,
-             },
-            .parameters.eccDetail = {
-                 .symmetric = {
-                     .algorithm = TPM2_ALG_NULL,
-                     .keyBits.aes = 256,
-                     .mode.aes = TPM2_ALG_CFB,
-                 },
-                 .scheme = {
-                      .scheme = TPM2_ALG_ECDSA,
-                      .details = {.ecdsa =
-                                  {.hashAlg = TPM2_ALG_SHA256}
-                      }
-                  },
-                 .curveID = TPM2_ECC_NIST_P256,
-                 .kdf = {.scheme =
-                         TPM2_ALG_NULL,.details = {}
-                  }
-             },
-            .unique.ecc = {
-                 .x = {.size = 0,.buffer = {0x10,0x20,0x30,0x40,0x50,0x60}},
-		 .y = {.size = 0,.buffer = {}}
-             }
-            ,
-        }
-    };
-
+                .size = 0,
+            },
+            .parameters.eccDetail = {.symmetric = {
+                                         .algorithm = TPM2_ALG_NULL,
+                                         .keyBits.aes = 256,
+                                         .mode.aes = TPM2_ALG_CFB,
+                                     },
+                                     .scheme = {.scheme = TPM2_ALG_ECDSA, .details = {.ecdsa = {.hashAlg = TPM2_ALG_SHA256}}},
+                                     .curveID = TPM2_ECC_NIST_P256,
+                                     .kdf = {.scheme = TPM2_ALG_NULL, .details = {}}},
+            .unique.ecc = {.x = {.size = 0, .buffer = {0x10, 0x20, 0x30, 0x40, 0x50, 0x60}}, .y = {.size = 0, .buffer = {}}},
+        }};
 
     TPM2B_DATA outsideInfo = {
         .size = 0,
-        .buffer = {}
-        ,
+        .buffer = {},
     };
 
     TPML_PCR_SELECTION creationPCR = {
@@ -94,13 +109,11 @@ int main() {
 
     TPM2B_AUTH authValue = {
         .size = 0,
-        .buffer = {}
-    };
-
+        .buffer = {}};
 
     ESYS_TR objectHandle = ESYS_TR_NONE;
     ESYS_TR session = ESYS_TR_NONE;
-    TPMT_SYM_DEF symmetric = { .algorithm = TPM2_ALG_NULL };
+    TPMT_SYM_DEF symmetric = {.algorithm = TPM2_ALG_NULL};
 
     TPM2B_PUBLIC *outPublic = NULL;
     TPM2B_CREATION_DATA *creationData = NULL;
@@ -113,12 +126,13 @@ int main() {
                               TPM2_SE_HMAC, &symmetric, TPM2_ALG_SHA256,
                               &session);
 
-    if (r != TSS2_RC_SUCCESS){
-        printf("\nError");
+    if (r != TSS2_RC_SUCCESS)
+    {
+        printf("\nError: Auth Session Failed\n");
         exit(1);
-        }
+    }
 
-    TPMI_ECC_CURVE curveID  = TPM2_ECC_NIST_P256;
+    TPMI_ECC_CURVE curveID = TPM2_ECC_NIST_P256;
     TPMS_ALGORITHM_DETAIL_ECC *parameters;
 
     r = Esys_ECC_Parameters(
@@ -129,37 +143,41 @@ int main() {
         curveID,
         &parameters);
 
-
-
     printf("\nECC Parameters:\nP = ");
-    for(int v=0; v<(*parameters).p.size; v++){
+    for (int v = 0; v < (*parameters).p.size; v++)
+    {
         printf("%02x ", (*parameters).p.buffer[v]);
     }
     printf("\nA = ");
-    for(int v=0; v<(*parameters).a.size; v++){
+    for (int v = 0; v < (*parameters).a.size; v++)
+    {
         printf("%02x ", (*parameters).a.buffer[v]);
     }
     printf("\nB = ");
-    for(int v=0; v<(*parameters).b.size; v++){
+    for (int v = 0; v < (*parameters).b.size; v++)
+    {
         printf("%02x ", (*parameters).b.buffer[v]);
     }
     printf("\nGx= ");
-    for(int v=0; v<(*parameters).gX.size; v++){
+    for (int v = 0; v < (*parameters).gX.size; v++)
+    {
         printf("%02x ", (*parameters).gX.buffer[v]);
     }
     printf("\nGy= ");
-    for(int v=0; v<(*parameters).gY.size; v++){
+    for (int v = 0; v < (*parameters).gY.size; v++)
+    {
         printf("%02x ", (*parameters).gY.buffer[v]);
     }
     printf("\nN = ");
-    for(int v=0; v<(*parameters).n.size; v++){
+    for (int v = 0; v < (*parameters).n.size; v++)
+    {
         printf("%02x ", (*parameters).n.buffer[v]);
     }
     printf("\nH = ");
-    for(int v=0; v<(*parameters).h.size; v++){
+    for (int v = 0; v < (*parameters).h.size; v++)
+    {
         printf("%02x ", (*parameters).h.buffer[v]);
     }
-
 
     r = Esys_CreatePrimary(esys_context, ESYS_TR_RH_OWNER, session,
                            ESYS_TR_NONE, ESYS_TR_NONE, &inSensitive, &inPublicECC,
@@ -167,21 +185,35 @@ int main() {
                            &outPublic, &creationData, &creationHash,
                            &creationTicket);
 
-
-    if (r != TSS2_RC_SUCCESS){
-        printf("\nError");
+    if (r != TSS2_RC_SUCCESS)
+    {
+        printf("\nError: Primary Key Creation Failed\n");
         exit(1);
     }
 
     printf("\n\nPublic Key:\nX = ");
-    for(int v=0; v<(*outPublic).publicArea.unique.ecc.x.size; v++){
-	printf("%02x ", (*outPublic).publicArea.unique.ecc.x.buffer[v]);
+    for (int v = 0; v < (*outPublic).publicArea.unique.ecc.x.size; v++)
+    {
+        printf("%02x ", (*outPublic).publicArea.unique.ecc.x.buffer[v]);
     }
     printf("\nY = ");
-    for(int v=0; v<(*outPublic).publicArea.unique.ecc.y.size; v++){
+    for (int v = 0; v < (*outPublic).publicArea.unique.ecc.y.size; v++)
+    {
         printf("%02x ", (*outPublic).publicArea.unique.ecc.y.buffer[v]);
     }
 
+    INT asnKeySize = 0;
+    BYTE *asnkey = keyToASN(outPublic->publicArea.unique.ecc.x.buffer,
+                            outPublic->publicArea.unique.ecc.x.size,
+                            outPublic->publicArea.unique.ecc.y.buffer,
+                            outPublic->publicArea.unique.ecc.y.size,
+                            &asnKeySize);
+
+    printf("\n\nPublic Key (ASN.1 DER) = \n");
+    for (int v = 0; v < asnKeySize; v++)
+    {
+        printf("%02x", asnkey[v]);
+    }
     TPM2B_NAME *nameKeySign = NULL;
     TPM2B_NAME *keyQualifiedName = NULL;
 
@@ -199,21 +231,17 @@ int main() {
 
     TPM2B_DIGEST pcr_digest_zero = {
         .size = 32,
-	//SHA256(UNIRIS)
-        .buffer = { 0x54, 0xc1, 0xa8, 0x30, 0xfa, 0xfd, 0x24, 0xd5,
-		    0xe8, 0xec, 0xe4, 0x32, 0xbd, 0x6e, 0x67, 0xd8,
-		    0xa0, 0xe6, 0x93, 0x05, 0x3b, 0x9f, 0x0d, 0x3b,
-		    0xed, 0x16, 0xc9, 0x10, 0xb6, 0x2c, 0xb8, 0xe9 }
-    };
+        //SHA256(UNIRIS)
+        .buffer = {0x54, 0xc1, 0xa8, 0x30, 0xfa, 0xfd, 0x24, 0xd5,
+                   0xe8, 0xec, 0xe4, 0x32, 0xbd, 0x6e, 0x67, 0xd8,
+                   0xa0, 0xe6, 0x93, 0x05, 0x3b, 0x9f, 0x0d, 0x3b,
+                   0xed, 0x16, 0xc9, 0x10, 0xb6, 0x2c, 0xb8, 0xe9}};
 
-
-
-    TPMT_SIG_SCHEME inScheme = { .scheme = TPM2_ALG_NULL };
+    TPMT_SIG_SCHEME inScheme = {.scheme = TPM2_ALG_NULL};
     TPMT_TK_HASHCHECK hash_validation = {
         .tag = TPM2_ST_HASHCHECK,
         .hierarchy = TPM2_RH_OWNER,
-        .digest = {0}
-    };
+        .digest = {0}};
 
     TPMT_SIGNATURE *signature = NULL;
 
@@ -228,21 +256,23 @@ int main() {
         &hash_validation,
         &signature);
 
-   printf("\n\nSignature:\nR = ");
-   for(int i=0; i<(*signature).signature.ecdsa.signatureR.size;i++){
-	printf("%02x ",(*signature).signature.ecdsa.signatureR.buffer[i]);
-    }
-   printf("\nS = ");
-   for(int i=0; i<(*signature).signature.ecdsa.signatureS.size;i++){
-        printf("%02x ",(*signature).signature.ecdsa.signatureS.buffer[i]);
-    }
-   printf("\n\n");
-
-
-    if (r != TSS2_RC_SUCCESS){
-        printf("\nError");
+    if (r != TSS2_RC_SUCCESS)
+    {
+        printf("\nError: ECC Signing Failed\n");
         exit(1);
-        }
+    }
+
+    printf("\n\nSignature:\nR = ");
+    for (int i = 0; i < (*signature).signature.ecdsa.signatureR.size; i++)
+    {
+        printf("%02x ", (*signature).signature.ecdsa.signatureR.buffer[i]);
+    }
+    printf("\nS = ");
+    for (int i = 0; i < (*signature).signature.ecdsa.signatureS.size; i++)
+    {
+        printf("%02x ", (*signature).signature.ecdsa.signatureS.buffer[i]);
+    }
+    printf("\n\n");
 
     TPMT_TK_VERIFIED *validation = NULL;
 
@@ -256,32 +286,11 @@ int main() {
         signature,
         &validation);
 
-
-    if (r != TSS2_RC_SUCCESS){
-        printf("\nError");
+    if (r != TSS2_RC_SUCCESS)
+    {
+        printf("\nError: ECC Signature Verfication Failed\n");
         exit(1);
-        }
+    }
 
-
-/*
-    TPM2B_ECC_POINT *zPoint = NULL;
-    TPM2B_ECC_POINT *pubPoint = NULL;
-
-    r = Esys_ECDH_KeyGen(
-        esys_context,
-        objectHandle,
-        ESYS_TR_NONE,
-        ESYS_TR_NONE,
-        ESYS_TR_NONE,
-        &zPoint,
-        &pubPoint);
-
-    if (r != TSS2_RC_SUCCESS){
-        printf("\nError");
-        exit(1);
-        }
-
-*/
-
-exit(0);
+    exit(0);
 }
