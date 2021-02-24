@@ -1,3 +1,4 @@
 random-gen.o
 nvm-write-read.o
 ecc-sign-verify.o
+certificate.pem
