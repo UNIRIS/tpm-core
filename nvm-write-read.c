@@ -7,7 +7,7 @@
    Esys_NV_Write()
    Esys_NV_Read()
    Esys_NV_UndefineSpace()
-   Compile: gcc nvm-write-read.c -ltss2-esys -o nvm-write-read.o
+   Compile: gcc nvm-write-read.c -ltss2-esys -o nvm-write-read
 */
 
 #include <stdio.h>

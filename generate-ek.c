@@ -7,7 +7,7 @@
    Esys_CreatePrimary()
    Esys_Sign()
    Esys_VerifySignature()
-   Compile: gcc ecc-sign-verify.c -ltss2-esys -o ecc-sign-verify.o
+   Compile: gcc generate-ek.c -ltss2-esys -o generate-ek
 */
 
 #include <stdio.h>
@@ -103,7 +103,7 @@ int main()
         exit(1);
     }
 
-    r = Esys_CreatePrimary(esys_context, TPM2_RH_ENDORSEMENT, session,
+    r = Esys_CreatePrimary(esys_context, ESYS_TR_RH_ENDORSEMENT, session,
                            ESYS_TR_NONE, ESYS_TR_NONE, &inSensitive, &inPublicECC,
                            &outsideInfo, &creationPCR, &objectHandle,
                            &outPublic, &creationData, &creationHash,

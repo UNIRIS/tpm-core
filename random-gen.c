@@ -3,7 +3,7 @@
    Executes:
    Esys_Initialize()
    Esys_GetRandom()
-   Compile: gcc random-gen.c -ltss2-esys -o random-gen.o
+   Compile: gcc random-gen.c -ltss2-esys -o random-gen
 */
 
 

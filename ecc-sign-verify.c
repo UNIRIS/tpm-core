@@ -7,7 +7,7 @@
    Esys_CreatePrimary()
    Esys_Sign()
    Esys_VerifySignature()
-   Compile: gcc ecc-sign-verify.c -ltss2-esys -o ecc-sign-verify.o
+   Compile: gcc ecc-sign-verify.c -ltss2-esys -o ecc-sign-verify
 */
 
 #include <stdio.h>

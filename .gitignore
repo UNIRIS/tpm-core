@@ -1,5 +1,5 @@
-random-gen.o
-nvm-write-read.o
-ecc-sign-verify.o
+random-gen
+nvm-write-read
+ecc-sign-verify
 certificate.pem
-generate-ek.o
+generate-ek
