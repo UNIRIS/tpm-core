@@ -16,7 +16,7 @@
 typedef unsigned char BYTE;
 typedef long unsigned int INT;
 
-static const unsigned char base64_table[65] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
+static const unsigned char base64_table[64] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
 //"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
 BYTE *base64url_encode(BYTE *src, INT len, INT *out_len)
@@ -176,6 +176,7 @@ int main()
     memcpy(data.buffer, (*outPublic).publicArea.unique.ecc.x.buffer, 32);
     memcpy(data.buffer + 32, (*outPublic).publicArea.unique.ecc.y.buffer, 32);
 
+    //Esys_TR_GetName
     r = Esys_Hash(esys_context, ESYS_TR_NONE, ESYS_TR_NONE, ESYS_TR_NONE, &data, TPM2_ALG_SHA256, ESYS_TR_RH_OWNER, &creationHash, &hashTicket);
 
     if (r != TSS2_RC_SUCCESS)
