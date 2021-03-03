@@ -24,10 +24,10 @@ BYTE *base64url_encode(BYTE *src, INT len, INT *out_len)
     BYTE *out, *pos, *end, *in;
     INT olen;
 
-    olen = len * 4 / 3 + (2 + 2 * 3); /* 3-byte blocks to 4-byte */
-    olen++;                           /* nul termination */
+    olen = len * 4 / 3 + (2 + 2 * 3);   /* 3-byte blocks to 4-byte */
+    olen++;                             /* null termination */
     if (olen < len)
-        return NULL; /* integer overflow */
+        return NULL;                    /* integer overflow */
     out = malloc(olen);
     if (out == NULL)
         return NULL;
