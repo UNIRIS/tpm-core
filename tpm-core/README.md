@@ -11,3 +11,9 @@ gcc uniris-tpm.c -o uniris-tpm -ltss2-esys -c
 gcc driver.c -o driver uniris-tpm
 sudo ./driver
 ```
+
+## One step driver compilation
+```console
+gcc driver.c -o driver uniris-tpm.c -ltss2-esys
+sudo ./driver
+```
