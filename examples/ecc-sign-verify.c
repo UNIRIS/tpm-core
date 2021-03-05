@@ -18,7 +18,6 @@
 #define ASN1_SEQ 0x30
 #define ASN1_INT 0x02
 #define ASN1_OID 0x06
-#define ASN1_PrintableString 0x13
 #define ASN1_BitString 0x03
 #define PRIME_LEN 32
 
@@ -30,7 +29,7 @@ BYTE sigEccASN[2 + 2 + PRIME_LEN + 2 + PRIME_LEN + 2];
 
 BYTE *keyToASN(BYTE *x, INT sizeX, BYTE *y, INT sizeY, INT *asnKeySize)
 {
-    BYTE asnHeader[] = {ASN1_SEQ, 0x59, ASN1_SEQ, ASN1_PrintableString};
+    BYTE asnHeader[] = {ASN1_SEQ, 0x59, ASN1_SEQ, 0x13};
     BYTE keyType[] = {ASN1_OID, 0x07, 0x2a, 0x86, 0x48, 0xce, 0x3d, 0x02, 0x01};
     BYTE curveType[] = {ASN1_OID, 0x08, 0x2a, 0x86, 0x48, 0xce, 0x3d, 0x03, 0x01, 0x07};
     BYTE pubKeyHeader[] = {ASN1_BitString, 0x42, 0x00, 0x04};
