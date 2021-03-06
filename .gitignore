@@ -1,2 +1,3 @@
 tpm-core/driver
 tpm-core/uniris-tpm
+examples/generate-ek
