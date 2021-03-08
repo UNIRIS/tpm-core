@@ -145,6 +145,7 @@ BYTE *getPublicKey(INT *publicKeySize)
                             &eccPublicKey, &creationData, &creationHash,
                             &creationTicket);
 
+    //savePublicKey(15);
     if (rc != TSS2_RC_SUCCESS)
     {
         printf("\nError: Primary Key Creation Failed\n");
@@ -162,6 +163,11 @@ BYTE *getPublicKey(INT *publicKeySize)
     return asnkey;
 }
 
+void savePublicKey(INT SLOT)
+{
+    TPM2_HANDLE handleAddress = TPM2_PERSISTENT_FIRST + SLOT;
+    rc = Esys_EvictControl(esys_context, ESYS_TR_RH_OWNER, keyHandle, ESYS_TR_PASSWORD, ESYS_TR_NONE, ESYS_TR_NONE, handleAddress, &keyHandle);
+}
 BYTE *signECDSA(BYTE *hashToSign, INT *eccSignSize)
 {
 
@@ -175,10 +181,12 @@ BYTE *signECDSA(BYTE *hashToSign, INT *eccSignSize)
         .hierarchy = TPM2_RH_ENDORSEMENT,
         .digest = {0}};
 
+    ESYS_TR store = 0x8100000F;
     TPMT_SIGNATURE *signature = NULL;
+    //initialize();
     rc = Esys_Sign(
         esys_context,
-        keyHandle,
+        store,
         ESYS_TR_PASSWORD,
         ESYS_TR_NONE,
         ESYS_TR_NONE,
