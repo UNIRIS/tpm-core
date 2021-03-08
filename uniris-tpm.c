@@ -86,6 +86,12 @@ BYTE *signToASN(BYTE *r, INT sizeR, BYTE *s, INT sizeS, INT *asnSignSize)
     return sigEccASN;
 }
 
+void savePublicKey(INT SLOT)
+{
+    TPM2_HANDLE handleAddress = TPM2_PERSISTENT_FIRST + SLOT;
+    rc = Esys_EvictControl(esys_context, ESYS_TR_RH_OWNER, keyHandle, ESYS_TR_PASSWORD, ESYS_TR_NONE, ESYS_TR_NONE, handleAddress, &keyHandle);
+}
+
 BYTE *getPublicKey(INT *publicKeySize)
 {
     TPM2B_SENSITIVE_CREATE inSensitive = {
@@ -163,11 +169,6 @@ BYTE *getPublicKey(INT *publicKeySize)
     return asnkey;
 }
 
-void savePublicKey(INT SLOT)
-{
-    TPM2_HANDLE handleAddress = TPM2_PERSISTENT_FIRST + SLOT;
-    rc = Esys_EvictControl(esys_context, ESYS_TR_RH_OWNER, keyHandle, ESYS_TR_PASSWORD, ESYS_TR_NONE, ESYS_TR_NONE, handleAddress, &keyHandle);
-}
 BYTE *signECDSA(BYTE *hashToSign, INT *eccSignSize)
 {
 
@@ -181,12 +182,15 @@ BYTE *signECDSA(BYTE *hashToSign, INT *eccSignSize)
         .hierarchy = TPM2_RH_ENDORSEMENT,
         .digest = {0}};
 
-    ESYS_TR store = 0x8100000F;
+    //Esys_TR_SetAuth
+    ESYS_TR storedKey = 0x8100000F;
+    Esys_TR_FromTPMPublic(esys_context, storedKey, ESYS_TR_NONE, ESYS_TR_NONE, ESYS_TR_NONE, &storedKey);
+
     TPMT_SIGNATURE *signature = NULL;
-    //initialize();
+
     rc = Esys_Sign(
         esys_context,
-        store,
+        storedKey,
         ESYS_TR_PASSWORD,
         ESYS_TR_NONE,
         ESYS_TR_NONE,
