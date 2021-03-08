@@ -19,5 +19,4 @@ static ESYS_CONTEXT *esys_context;
 static ESYS_TR session;
 int rc;
 void initialize();
-void setSession();
 BYTE *getPublicKey(INT *publicKeySize);

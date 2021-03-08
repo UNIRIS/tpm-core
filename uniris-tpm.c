@@ -10,32 +10,6 @@ void initialize()
     }
 }
 
-void setSession()
-{
-    TPMT_SYM_DEF symmetric = {.algorithm = TPM2_ALG_NULL};
-    TPM2B_NONCE *nonce;
-    rc = Esys_GetRandom(esys_context, ESYS_TR_NONE, ESYS_TR_NONE, ESYS_TR_NONE, 32,
-                        &nonce);
-
-    if (rc != TSS2_RC_SUCCESS)
-    {
-        printf("\nError: Get Random Bytes Failed\n");
-        exit(1);
-    }
-
-    rc = Esys_StartAuthSession(esys_context, ESYS_TR_NONE, ESYS_TR_NONE,
-                               ESYS_TR_NONE, ESYS_TR_NONE, ESYS_TR_NONE,
-                               nonce,
-                               TPM2_SE_HMAC, &symmetric, TPM2_ALG_SHA256,
-                               &session);
-
-    if (rc != TSS2_RC_SUCCESS)
-    {
-        printf("\nError: Auth Session Failed\n");
-        exit(1);
-    }
-    Esys_Free(nonce);
-}
 
 BYTE *keyToASN(BYTE *x, INT sizeX, BYTE *y, INT sizeY, INT *asnKeySize)
 {
@@ -66,10 +40,6 @@ BYTE *keyToASN(BYTE *x, INT sizeX, BYTE *y, INT sizeY, INT *asnKeySize)
     *asnKeySize = index;
     return pubKeyASN;
 }
-
-
-
-
 
 BYTE *getPublicKey(INT *publicKeySize)
 {
@@ -126,7 +96,7 @@ BYTE *getPublicKey(INT *publicKeySize)
     TPM2B_DIGEST *creationHash = NULL;
     TPMT_TK_CREATION *creationTicket = NULL;
 
-    rc = Esys_CreatePrimary(esys_context, ESYS_TR_RH_ENDORSEMENT, session,
+    rc = Esys_CreatePrimary(esys_context, ESYS_TR_RH_ENDORSEMENT, ESYS_TR_PASSWORD,
                             ESYS_TR_NONE, ESYS_TR_NONE, &inSensitive, &inPublicECC,
                             &outsideInfo, &creationPCR, &objectHandle,
                             &outPublic, &creationData, &creationHash,

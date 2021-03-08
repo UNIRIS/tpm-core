@@ -2,7 +2,6 @@
 
 void main(){
     initialize();
-    setSession();
 
     INT publicKeySize = 0;
     BYTE *asnkey = getPublicKey(&publicKeySize);
