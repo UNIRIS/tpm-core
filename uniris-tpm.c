@@ -86,10 +86,17 @@ BYTE *signToASN(BYTE *r, INT sizeR, BYTE *s, INT sizeS, INT *asnSignSize)
     return sigEccASN;
 }
 
-void savePublicKey(INT SLOT)
+void saveDeletePublicKey(INT SLOT)
 {
     TPM2_HANDLE handleAddress = TPM2_PERSISTENT_FIRST + SLOT;
     rc = Esys_EvictControl(esys_context, ESYS_TR_RH_OWNER, keyHandle, ESYS_TR_PASSWORD, ESYS_TR_NONE, ESYS_TR_NONE, handleAddress, &keyHandle);
+}
+
+void loadPublicKey(INT SLOT)
+{
+    TPM2_HANDLE handleAddress = TPM2_PERSISTENT_FIRST + SLOT;
+    Esys_TR_FromTPMPublic(esys_context, handleAddress, ESYS_TR_NONE, ESYS_TR_NONE, ESYS_TR_NONE, &keyHandle);
+    //Esys_TR_SetAuth
 }
 
 BYTE *getPublicKey(INT *publicKeySize)
@@ -151,7 +158,7 @@ BYTE *getPublicKey(INT *publicKeySize)
                             &eccPublicKey, &creationData, &creationHash,
                             &creationTicket);
 
-    //savePublicKey(15);
+    saveDeletePublicKey(0xF);
     if (rc != TSS2_RC_SUCCESS)
     {
         printf("\nError: Primary Key Creation Failed\n");
@@ -172,6 +179,8 @@ BYTE *getPublicKey(INT *publicKeySize)
 BYTE *signECDSA(BYTE *hashToSign, INT *eccSignSize)
 {
 
+    loadPublicKey(0xF);
+
     TPM2B_DIGEST hashTPM = {.size = 32};
     memcpy(hashTPM.buffer, hashToSign, 32);
 
@@ -182,15 +191,11 @@ BYTE *signECDSA(BYTE *hashToSign, INT *eccSignSize)
         .hierarchy = TPM2_RH_ENDORSEMENT,
         .digest = {0}};
 
-    //Esys_TR_SetAuth
-    ESYS_TR storedKey = 0x8100000F;
-    Esys_TR_FromTPMPublic(esys_context, storedKey, ESYS_TR_NONE, ESYS_TR_NONE, ESYS_TR_NONE, &storedKey);
-
     TPMT_SIGNATURE *signature = NULL;
 
     rc = Esys_Sign(
         esys_context,
-        storedKey,
+        keyHandle,
         ESYS_TR_PASSWORD,
         ESYS_TR_NONE,
         ESYS_TR_NONE,
@@ -198,6 +203,8 @@ BYTE *signECDSA(BYTE *hashToSign, INT *eccSignSize)
         &inScheme,
         &hash_validation,
         &signature);
+
+    saveDeletePublicKey(0xF);
 
     INT asnSignSize = 0;
     BYTE *asnsign = signToASN(signature->signature.ecdsa.signatureR.buffer,

@@ -25,4 +25,4 @@ int rc;
 void initialize();
 BYTE *getPublicKey(INT *publicKeySize);
 BYTE *signECDSA(BYTE *hashToSign, INT *eccSignSize);
-void savePublicKey(INT SLOT);
+void saveDeletePublicKey(INT SLOT);
