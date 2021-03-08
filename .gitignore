@@ -1,3 +1,5 @@
 driver
 uniris-tpm
 examples/generate-ek
+examples/ecc-sign-verify
+backup.c
