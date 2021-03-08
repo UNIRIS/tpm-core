@@ -17,6 +17,14 @@ BYTE sigEccASN[2 + 2 + PRIME_LEN + 2 + PRIME_LEN + 2];
 
 static ESYS_CONTEXT *esys_context;
 static ESYS_TR session;
+static BYTE *asnkey;
+static INT asnKeySize;
+static TPM2B_PUBLIC *eccPublicKey;
+static ESYS_TR keyHandle;
 int rc;
+
+
+
 void initialize();
 BYTE *getPublicKey(INT *publicKeySize);
+BYTE *signECDSA(BYTE *hashToSign, INT *eccSignSize);

@@ -10,7 +10,6 @@ void initialize()
     }
 }
 
-
 BYTE *keyToASN(BYTE *x, INT sizeX, BYTE *y, INT sizeY, INT *asnKeySize)
 {
     BYTE asnHeader[] = {ASN1_SEQ, 0x59, ASN1_SEQ, 0x13};
@@ -39,6 +38,52 @@ BYTE *keyToASN(BYTE *x, INT sizeX, BYTE *y, INT sizeY, INT *asnKeySize)
 
     *asnKeySize = index;
     return pubKeyASN;
+}
+
+BYTE *signToASN(BYTE *r, INT sizeR, BYTE *s, INT sizeS, INT *asnSignSize)
+{
+
+    int index = 0;
+    sigEccASN[index++] = ASN1_SEQ;
+
+    int asnLen = (PRIME_LEN * 2) + 4;
+    if (r[0] > 127) // check MSB, R needs padding to remain positive
+        asnLen++;
+    if (s[0] > 127) // check MSB, S needs padding to remain positive
+        asnLen++;
+    /*
+	if(asnLen > 127)
+		sigEccASN[index++] = 0x81;
+    */
+    sigEccASN[index++] = asnLen;
+
+    // R value
+    sigEccASN[index++] = ASN1_INT;
+    if (r[0] > 127)
+    {
+        sigEccASN[index++] = PRIME_LEN + 1;
+        sigEccASN[index++] = 0x00; // Extra byte to ensure R remains positive
+    }
+    else
+        sigEccASN[index++] = PRIME_LEN;
+    memcpy(sigEccASN + index, r, PRIME_LEN);
+    index += PRIME_LEN;
+
+    // S value
+    sigEccASN[index++] = ASN1_INT;
+    if (s[0] > 127)
+    {
+        sigEccASN[index++] = PRIME_LEN + 1;
+        sigEccASN[index++] = 0x00; // Extra byte to ensure S remains positive
+    }
+    else
+        sigEccASN[index++] = PRIME_LEN;
+    memcpy(sigEccASN + index, s, PRIME_LEN);
+    index += PRIME_LEN;
+
+    *asnSignSize = index;
+
+    return sigEccASN;
 }
 
 BYTE *getPublicKey(INT *publicKeySize)
@@ -90,16 +135,14 @@ BYTE *getPublicKey(INT *publicKeySize)
         .count = 0,
     };
 
-    ESYS_TR objectHandle = ESYS_TR_NONE;
-    TPM2B_PUBLIC *outPublic = NULL;
     TPM2B_CREATION_DATA *creationData = NULL;
     TPM2B_DIGEST *creationHash = NULL;
     TPMT_TK_CREATION *creationTicket = NULL;
 
     rc = Esys_CreatePrimary(esys_context, ESYS_TR_RH_ENDORSEMENT, ESYS_TR_PASSWORD,
                             ESYS_TR_NONE, ESYS_TR_NONE, &inSensitive, &inPublicECC,
-                            &outsideInfo, &creationPCR, &objectHandle,
-                            &outPublic, &creationData, &creationHash,
+                            &outsideInfo, &creationPCR, &keyHandle,
+                            &eccPublicKey, &creationData, &creationHash,
                             &creationTicket);
 
     if (rc != TSS2_RC_SUCCESS)
@@ -108,13 +151,48 @@ BYTE *getPublicKey(INT *publicKeySize)
         exit(1);
     }
 
-    INT asnKeySize = 0;
-    BYTE *asnkey = keyToASN(outPublic->publicArea.unique.ecc.x.buffer,
-                            outPublic->publicArea.unique.ecc.x.size,
-                            outPublic->publicArea.unique.ecc.y.buffer,
-                            outPublic->publicArea.unique.ecc.y.size,
-                            &asnKeySize);
+    asnKeySize = 0;
+    asnkey = keyToASN(eccPublicKey->publicArea.unique.ecc.x.buffer,
+                      eccPublicKey->publicArea.unique.ecc.x.size,
+                      eccPublicKey->publicArea.unique.ecc.y.buffer,
+                      eccPublicKey->publicArea.unique.ecc.y.size,
+                      &asnKeySize);
 
-    memcpy(publicKeySize,&asnKeySize, sizeof(asnKeySize));
+    memcpy(publicKeySize, &asnKeySize, sizeof(asnKeySize));
     return asnkey;
+}
+
+BYTE *signECDSA(BYTE *hashToSign, INT *eccSignSize)
+{
+
+    TPM2B_DIGEST hashTPM = {.size = 32};
+    memcpy(hashTPM.buffer, hashToSign, 32);
+
+    TPMT_SIG_SCHEME inScheme = {.scheme = TPM2_ALG_NULL};
+
+    TPMT_TK_HASHCHECK hash_validation = {
+        .tag = TPM2_ST_HASHCHECK,
+        .hierarchy = TPM2_RH_ENDORSEMENT,
+        .digest = {0}};
+
+    TPMT_SIGNATURE *signature = NULL;
+    rc = Esys_Sign(
+        esys_context,
+        keyHandle,
+        ESYS_TR_PASSWORD,
+        ESYS_TR_NONE,
+        ESYS_TR_NONE,
+        &hashTPM,
+        &inScheme,
+        &hash_validation,
+        &signature);
+
+    INT asnSignSize = 0;
+    BYTE *asnsign = signToASN(signature->signature.ecdsa.signatureR.buffer,
+                              signature->signature.ecdsa.signatureR.size,
+                              signature->signature.ecdsa.signatureS.buffer,
+                              signature->signature.ecdsa.signatureS.size,
+                              &asnSignSize);
+    memcpy(eccSignSize, &asnSignSize, sizeof(asnSignSize));
+    return asnsign;
 }
