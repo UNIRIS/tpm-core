@@ -8,10 +8,23 @@ void initialize()
         printf("\nError: Esys Initialization Failed\n");
         exit(1);
     }
+    isRootKey = false;
+    BYTE *key = getPublicKey(0, &rootKeySize);
+    memset(rootKeyASN, 0, 4 + 9 + 10 + 4 + PRIME_LEN + PRIME_LEN);
+    memset(rootKeyHash, 0, 32);
+    memcpy(rootKeyASN, key, rootKeySize);
+
+    previousKeyHandle = ESYS_TR_NONE;
+    nextKeyHandle = ESYS_TR_NONE;
+    previousKeyIndex = -1;
+    nextKeyIndex = previousKeyIndex + 1;
+
+    currentKeyHandle = ESYS_TR_NONE;
 }
 
 BYTE *keyToASN(BYTE *x, INT sizeX, BYTE *y, INT sizeY, INT *asnKeySize)
 {
+    BYTE *pubKeyASN = malloc(4 + 9 + 10 + 4 + PRIME_LEN + PRIME_LEN);
     BYTE asnHeader[] = {ASN1_SEQ, 0x59, ASN1_SEQ, 0x13};
     BYTE keyType[] = {ASN1_OID, 0x07, 0x2a, 0x86, 0x48, 0xce, 0x3d, 0x02, 0x01};
     BYTE curveType[] = {ASN1_OID, 0x08, 0x2a, 0x86, 0x48, 0xce, 0x3d, 0x03, 0x01, 0x07};
@@ -86,21 +99,13 @@ BYTE *signToASN(BYTE *r, INT sizeR, BYTE *s, INT sizeS, INT *asnSignSize)
     return sigEccASN;
 }
 
-void saveDeletePublicKey(INT SLOT)
+BYTE *getPublicKey(INT index, INT *publicKeySize)
 {
-    TPM2_HANDLE handleAddress = TPM2_PERSISTENT_FIRST + SLOT;
-    rc = Esys_EvictControl(esys_context, ESYS_TR_RH_OWNER, keyHandle, ESYS_TR_PASSWORD, ESYS_TR_NONE, ESYS_TR_NONE, handleAddress, &keyHandle);
-}
-
-void loadPublicKey(INT SLOT)
-{
-    TPM2_HANDLE handleAddress = TPM2_PERSISTENT_FIRST + SLOT;
-    Esys_TR_FromTPMPublic(esys_context, handleAddress, ESYS_TR_NONE, ESYS_TR_NONE, ESYS_TR_NONE, &keyHandle);
-    //Esys_TR_SetAuth
-}
-
-BYTE *getPublicKey(INT *publicKeySize)
-{
+    if (index == 0 && isRootKey == true)
+    {
+        memcpy(publicKeySize, &rootKeySize, sizeof(rootKeySize));
+        return rootKeyASN;
+    }
     TPM2B_SENSITIVE_CREATE inSensitive = {
         .size = 0,
         .sensitive = {
@@ -136,8 +141,12 @@ BYTE *getPublicKey(INT *publicKeySize)
                                      .scheme = {.scheme = TPM2_ALG_ECDSA, .details = {.ecdsa = {.hashAlg = TPM2_ALG_SHA256}}},
                                      .curveID = TPM2_ECC_NIST_P256,
                                      .kdf = {.scheme = TPM2_ALG_NULL, .details = {}}},
-            .unique.ecc = {.x = {.size = 32, .buffer = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}}, .y = {.size = 32, .buffer = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}}},
+            .unique.ecc = {.x = {.size = 32, .buffer = {0}}, .y = {.size = 32, .buffer = {0}}},
+
         }};
+
+    memcpy(inPublicECC.publicArea.unique.ecc.x.buffer, rootKeyHash, 32);
+    memcpy(inPublicECC.publicArea.unique.ecc.y.buffer, &index, sizeof(index));
 
     TPM2B_DATA outsideInfo = {
         .size = 0,
@@ -151,35 +160,42 @@ BYTE *getPublicKey(INT *publicKeySize)
     TPM2B_CREATION_DATA *creationData = NULL;
     TPM2B_DIGEST *creationHash = NULL;
     TPMT_TK_CREATION *creationTicket = NULL;
+    TPM2B_PUBLIC *eccPublicKey = NULL;
 
     rc = Esys_CreatePrimary(esys_context, ESYS_TR_RH_ENDORSEMENT, ESYS_TR_PASSWORD,
                             ESYS_TR_NONE, ESYS_TR_NONE, &inSensitive, &inPublicECC,
-                            &outsideInfo, &creationPCR, &keyHandle,
+                            &outsideInfo, &creationPCR, &currentKeyHandle,
                             &eccPublicKey, &creationData, &creationHash,
                             &creationTicket);
-
-    saveDeletePublicKey(0xF);
     if (rc != TSS2_RC_SUCCESS)
     {
         printf("\nError: Primary Key Creation Failed\n");
         exit(1);
     }
+    if (index == 0)
+    {
+        rootKeyHandle = currentKeyHandle;
+        isRootKey = true;
+        TPM2B_MAX_BUFFER data = {.size = 64, .buffer = {}};
+        memcpy(data.buffer, (*eccPublicKey).publicArea.unique.ecc.x.buffer, 32);
+        memcpy(data.buffer + 32, (*eccPublicKey).publicArea.unique.ecc.y.buffer, 32);
+        TPMT_TK_HASHCHECK *hashTicket = NULL;
+        Esys_Hash(esys_context, ESYS_TR_NONE, ESYS_TR_NONE, ESYS_TR_NONE, &data, TPM2_ALG_SHA256, ESYS_TR_RH_OWNER, &creationHash, &hashTicket);
+        memcpy(rootKeyHash, creationHash, 32);
+    }
 
-    asnKeySize = 0;
-    asnkey = keyToASN(eccPublicKey->publicArea.unique.ecc.x.buffer,
-                      eccPublicKey->publicArea.unique.ecc.x.size,
-                      eccPublicKey->publicArea.unique.ecc.y.buffer,
-                      eccPublicKey->publicArea.unique.ecc.y.size,
-                      &asnKeySize);
+    INT keySize = 0;
+    BYTE *key = keyToASN(eccPublicKey->publicArea.unique.ecc.x.buffer,
+                         eccPublicKey->publicArea.unique.ecc.x.size,
+                         eccPublicKey->publicArea.unique.ecc.y.buffer,
+                         eccPublicKey->publicArea.unique.ecc.y.size, &keySize);
 
-    memcpy(publicKeySize, &asnKeySize, sizeof(asnKeySize));
-    return asnkey;
+    memcpy(publicKeySize, &keySize, sizeof(keySize));
+    return key;
 }
 
-BYTE *signECDSA(BYTE *hashToSign, INT *eccSignSize)
+BYTE *signECDSA(INT index, BYTE *hashToSign, INT *eccSignSize)
 {
-
-    loadPublicKey(0xF);
 
     TPM2B_DIGEST hashTPM = {.size = 32};
     memcpy(hashTPM.buffer, hashToSign, 32);
@@ -193,18 +209,28 @@ BYTE *signECDSA(BYTE *hashToSign, INT *eccSignSize)
 
     TPMT_SIGNATURE *signature = NULL;
 
-    rc = Esys_Sign(
-        esys_context,
-        keyHandle,
-        ESYS_TR_PASSWORD,
-        ESYS_TR_NONE,
-        ESYS_TR_NONE,
-        &hashTPM,
-        &inScheme,
-        &hash_validation,
-        &signature);
+    ESYS_TR signingKeyHandle = ESYS_TR_NONE;
 
-    saveDeletePublicKey(0xF);
+    if (index == 0)
+    {
+        signingKeyHandle = rootKeyHandle;
+    }
+    INT size = 0;
+    if (index != previousKeyIndex)
+    {
+        getPublicKey(index, &size);
+        previousKeyIndex = index;
+        previousKeyHandle = currentKeyHandle;
+
+        getPublicKey(index + 1, &size);
+        nextKeyIndex = index + 1;
+        nextKeyHandle = currentKeyHandle;
+    }
+    signingKeyHandle = previousKeyHandle;
+    rc = Esys_Sign(esys_context, signingKeyHandle, ESYS_TR_PASSWORD, ESYS_TR_NONE, ESYS_TR_NONE,
+                   &hashTPM, &inScheme, &hash_validation, &signature);
+
+    updateHandlesIndexes();
 
     INT asnSignSize = 0;
     BYTE *asnsign = signToASN(signature->signature.ecdsa.signatureR.buffer,
@@ -214,4 +240,16 @@ BYTE *signECDSA(BYTE *hashToSign, INT *eccSignSize)
                               &asnSignSize);
     memcpy(eccSignSize, &asnSignSize, sizeof(asnSignSize));
     return asnsign;
+}
+
+void updateHandlesIndexes()
+{
+    INT size = 0;
+    Esys_FlushContext(esys_context, previousKeyHandle);
+    previousKeyHandle = nextKeyHandle;
+    previousKeyIndex = nextKeyIndex;
+
+    nextKeyIndex = previousKeyIndex + 1;
+    getPublicKey(nextKeyIndex, &size);
+    nextKeyHandle = currentKeyHandle;
 }
