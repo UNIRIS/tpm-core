@@ -8,7 +8,7 @@ gcc uniris-tpm.c -o uniris-tpm -ltss2-esys -c
 
 ## Testing with a driver
 ```console
-gcc driver.c -o driver uniris-tpm
+gcc driver.c -o driver uniris-tpm -ltss2-esys
 sudo ./driver
 ```
 
