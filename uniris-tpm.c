@@ -1,6 +1,6 @@
 #include "uniris-tpm.h"
 
-void initializeTPM(INT index)
+void initializeTPM(INT keyIndex)
 {
     rc = Esys_Initialize(&esys_context, NULL, NULL);
     if (rc != TSS2_RC_SUCCESS)
@@ -12,7 +12,7 @@ void initializeTPM(INT index)
     previousKeyHandle = ESYS_TR_NONE;
     nextKeyHandle = ESYS_TR_NONE;
     setRootKey();
-    setKeyIndex(index);
+    setKeyIndex(keyIndex);
 }
 
 void keyToASN()
@@ -92,7 +92,7 @@ BYTE *signToASN(BYTE *r, INT sizeR, BYTE *s, INT sizeS, INT *asnSignSize)
     return sigEccASN;
 }
 
-BYTE *signECDSA(INT index, BYTE *hashToSign, INT *eccSignSize)
+BYTE *signECDSA(INT keyIndex, BYTE *hashToSign, INT *eccSignSize)
 {
 
     TPM2B_DIGEST hashTPM = {.size = 32};
@@ -109,14 +109,14 @@ BYTE *signECDSA(INT index, BYTE *hashToSign, INT *eccSignSize)
 
     ESYS_TR signingKeyHandle = ESYS_TR_NONE;
 
-    if (index == 0)
+    if (keyIndex == 0)
     {
         signingKeyHandle = rootKeyHandle;
     }
 
-    else if (index != previousKeyIndex)
+    else if (keyIndex != previousKeyIndex)
     {
-        setKeyIndex(index);
+        setKeyIndex(keyIndex);
         signingKeyHandle = previousKeyHandle;
     }
 
@@ -125,7 +125,7 @@ BYTE *signECDSA(INT index, BYTE *hashToSign, INT *eccSignSize)
 
     rc = Esys_Sign(esys_context, signingKeyHandle, ESYS_TR_PASSWORD, ESYS_TR_NONE, ESYS_TR_NONE,
                    &hashTPM, &inScheme, &hash_validation, &signature);
-    if (index)
+    if (keyIndex)
         updateHandlesIndexes();
 
     INT asnSignSize = 0;
@@ -155,21 +155,21 @@ void updateHandlesIndexes()
     nextKeySizeASN = currentKeySizeASN;
 }
 
-BYTE *getPublicKey(INT index, INT *publicKeySize)
+BYTE *getPublicKey(INT keyIndex, INT *publicKeySize)
 {
-    if (index == nextKeyIndex)
+    if (keyIndex == nextKeyIndex)
     {
         memcpy(publicKeySize, &nextKeySizeASN, sizeof(nextKeySizeASN));
         return nextKeyASN;
     }
 
-    else if (index == previousKeyIndex)
+    else if (keyIndex == previousKeyIndex)
     {
         memcpy(publicKeySize, &previousKeySizeASN, sizeof(previousKeySizeASN));
         return previousKeyASN;
     }
 
-    else if (index == 0)
+    else if (keyIndex == 0)
     {
         memcpy(publicKeySize, &rootKeySizeASN, sizeof(rootKeySizeASN));
         return rootKeyASN;
@@ -178,7 +178,7 @@ BYTE *getPublicKey(INT index, INT *publicKeySize)
     else
     {
         Esys_FlushContext(esys_context, rootKeyHandle);
-        generatePublicKey(index);
+        generatePublicKey(keyIndex);
         Esys_FlushContext(esys_context, currentKeyHandle);
 
         BYTE *tempKey = malloc(ANS1_MAX_KEY_SIZE);
@@ -190,7 +190,7 @@ BYTE *getPublicKey(INT index, INT *publicKeySize)
     }
 }
 
-void generatePublicKey(INT index)
+void generatePublicKey(INT keyIndex)
 {
 
     TPM2B_SENSITIVE_CREATE inSensitive = {
@@ -233,7 +233,7 @@ void generatePublicKey(INT index)
         }};
 
     memcpy(inPublicECC.publicArea.unique.ecc.x.buffer, rootKeyHash, 32);
-    memcpy(inPublicECC.publicArea.unique.ecc.y.buffer, &index, sizeof(index));
+    memcpy(inPublicECC.publicArea.unique.ecc.y.buffer, &keyIndex, sizeof(keyIndex));
 
     TPM2B_DATA outsideInfo = {
         .size = 0,
@@ -283,11 +283,11 @@ void setRootKey()
     memcpy(rootKeyHash, creationHash, 32);
 }
 
-void setKeyIndex(INT index)
+void setKeyIndex(INT keyIndex)
 {
-    if (index < 1)
-        index = 1;
-    previousKeyIndex = index;
+    if (keyIndex < 1)
+        keyIndex = 1;
+    previousKeyIndex = keyIndex;
     if (previousKeyHandle != ESYS_TR_NONE)
         Esys_FlushContext(esys_context, previousKeyHandle);
     generatePublicKey(previousKeyIndex);

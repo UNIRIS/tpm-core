@@ -39,12 +39,12 @@ static INT currentKeySizeASN;
 
 BYTE sigEccASN[2 + 2 + PRIME_LEN + 2 + PRIME_LEN + 2];
 
-void initializeTPM(INT index);
+void initializeTPM(INT keyIndex);
 void setRootKey();
-void setKeyIndex(INT index);
+void setKeyIndex(INT keyIndex);
 INT getKeyIndex();
 void updateHandlesIndexes();
-void generatePublicKey(INT index);
+void generatePublicKey(INT keyIndex);
 
-BYTE *getPublicKey(INT index, INT *publicKeySize);
-BYTE *signECDSA(INT index, BYTE *hashToSign, INT *eccSignSize);
+BYTE *getPublicKey(INT keyIndex, INT *publicKeySize);
+BYTE *signECDSA(INT keyIndex, BYTE *hashToSign, INT *eccSignSize);
