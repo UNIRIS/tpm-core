@@ -1,3 +1,6 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <tss2/tss2_esys.h>
 #include "uniris-tpm.h"
 
@@ -33,21 +36,6 @@ static INT currentKeySizeASN;
 
 static BYTE tempKey[ANS1_MAX_KEY_SIZE];
 static BYTE sigEccASN[2 + 2 + PRIME_LEN + 2 + PRIME_LEN + 2];
-
-void initializeTPM(INT keyIndex)
-{
-    rc = Esys_Initialize(&esys_context, NULL, NULL);
-    if (rc != TSS2_RC_SUCCESS)
-    {
-        printf("\nError: Esys Initialization Failed\n");
-        exit(1);
-    }
-
-    previousKeyHandle = ESYS_TR_NONE;
-    nextKeyHandle = ESYS_TR_NONE;
-    setRootKey();
-    setKeyIndex(keyIndex);
-}
 
 void keyToASN()
 {
@@ -127,104 +115,6 @@ BYTE *signToASN(BYTE *r, INT sizeR, BYTE *s, INT sizeS, INT *asnSignSize)
     return sigEccASN;
 }
 
-BYTE *signECDSA(INT keyIndex, BYTE *hashToSign, INT *eccSignSize)
-{
-
-    TPM2B_DIGEST hashTPM = {.size = 32};
-    memcpy(hashTPM.buffer, hashToSign, 32);
-
-    TPMT_SIG_SCHEME inScheme = {.scheme = TPM2_ALG_NULL};
-
-    TPMT_TK_HASHCHECK hash_validation = {
-        .tag = TPM2_ST_HASHCHECK,
-        .hierarchy = TPM2_RH_ENDORSEMENT,
-        .digest = {0}};
-
-    TPMT_SIGNATURE *signature = NULL;
-
-    ESYS_TR signingKeyHandle = ESYS_TR_NONE;
-
-    if (keyIndex == 0)
-    {
-        signingKeyHandle = rootKeyHandle;
-    }
-
-    else if (keyIndex != previousKeyIndex)
-    {
-        setKeyIndex(keyIndex);
-        signingKeyHandle = previousKeyHandle;
-    }
-
-    else
-        signingKeyHandle = previousKeyHandle;
-
-    rc = Esys_Sign(esys_context, signingKeyHandle, ESYS_TR_PASSWORD, ESYS_TR_NONE, ESYS_TR_NONE,
-                   &hashTPM, &inScheme, &hash_validation, &signature);
-    if (keyIndex)
-        updateHandlesIndexes();
-
-    INT asnSignSize = 0;
-    BYTE *asnsign = signToASN(signature->signature.ecdsa.signatureR.buffer,
-                              signature->signature.ecdsa.signatureR.size,
-                              signature->signature.ecdsa.signatureS.buffer,
-                              signature->signature.ecdsa.signatureS.size,
-                              &asnSignSize);
-    memcpy(eccSignSize, &asnSignSize, sizeof(asnSignSize));
-    Esys_Free(signature);
-    return asnsign;
-}
-
-void updateHandlesIndexes()
-{
-    Esys_FlushContext(esys_context, previousKeyHandle);
-    previousKeyHandle = nextKeyHandle;
-    previousKeyIndex = nextKeyIndex;
-    memset(previousKeyASN, 0, ANS1_MAX_KEY_SIZE);
-    memcpy(previousKeyASN, nextKeyASN, nextKeySizeASN);
-    previousKeySizeASN = nextKeySizeASN;
-
-    nextKeyIndex = previousKeyIndex + 1;
-    generatePublicKey(nextKeyIndex);
-    nextKeyHandle = currentKeyHandle;
-    memset(nextKeyASN, 0, ANS1_MAX_KEY_SIZE);
-    memcpy(nextKeyASN, currentKeyASN, currentKeySizeASN);
-    nextKeySizeASN = currentKeySizeASN;
-}
-
-BYTE *getPublicKey(INT keyIndex, INT *publicKeySize)
-{
-    if (keyIndex == nextKeyIndex)
-    {
-        memcpy(publicKeySize, &nextKeySizeASN, sizeof(nextKeySizeASN));
-        return nextKeyASN;
-    }
-
-    else if (keyIndex == previousKeyIndex)
-    {
-        memcpy(publicKeySize, &previousKeySizeASN, sizeof(previousKeySizeASN));
-        return previousKeyASN;
-    }
-
-    else if (keyIndex == 0)
-    {
-        memcpy(publicKeySize, &rootKeySizeASN, sizeof(rootKeySizeASN));
-        return rootKeyASN;
-    }
-
-    else
-    {
-        Esys_FlushContext(esys_context, rootKeyHandle);
-        generatePublicKey(keyIndex);
-        Esys_FlushContext(esys_context, currentKeyHandle);
-
-        memcpy(tempKey, currentKeyASN, currentKeySizeASN);
-        memcpy(publicKeySize, &currentKeySizeASN, sizeof(currentKeySizeASN));
-
-        setRootKey();
-        return tempKey;
-    }
-}
-
 void generatePublicKey(INT keyIndex)
 {
 
@@ -297,12 +187,10 @@ void generatePublicKey(INT keyIndex)
     Esys_Free(creationData);
     Esys_Free(creationHash);
     Esys_Free(creationTicket);
-    
+
     keyToASN();
-    if(keyIndex)
+    if (keyIndex)
         Esys_Free(currentKeyTPM);
-
-
 }
 
 void setRootKey()
@@ -328,6 +216,43 @@ void setRootKey()
     Esys_Free(hashTicket);
     Esys_Free(creationHash);
     Esys_Free(currentKeyTPM);
+}
+
+void updateHandlesIndexes()
+{
+    Esys_FlushContext(esys_context, previousKeyHandle);
+    previousKeyHandle = nextKeyHandle;
+    previousKeyIndex = nextKeyIndex;
+    memset(previousKeyASN, 0, ANS1_MAX_KEY_SIZE);
+    memcpy(previousKeyASN, nextKeyASN, nextKeySizeASN);
+    previousKeySizeASN = nextKeySizeASN;
+
+    nextKeyIndex = previousKeyIndex + 1;
+    generatePublicKey(nextKeyIndex);
+    nextKeyHandle = currentKeyHandle;
+    memset(nextKeyASN, 0, ANS1_MAX_KEY_SIZE);
+    memcpy(nextKeyASN, currentKeyASN, currentKeySizeASN);
+    nextKeySizeASN = currentKeySizeASN;
+}
+
+void initializeTPM(INT keyIndex)
+{
+    rc = Esys_Initialize(&esys_context, NULL, NULL);
+    if (rc != TSS2_RC_SUCCESS)
+    {
+        printf("\nError: Esys Initialization Failed\n");
+        exit(1);
+    }
+
+    previousKeyHandle = ESYS_TR_NONE;
+    nextKeyHandle = ESYS_TR_NONE;
+    setRootKey();
+    setKeyIndex(keyIndex);
+}
+
+INT getKeyIndex()
+{
+    return previousKeyIndex;
 }
 
 void setKeyIndex(INT keyIndex)
@@ -357,7 +282,83 @@ void setKeyIndex(INT keyIndex)
     currentKeyHandle = ESYS_TR_NONE;
 }
 
-INT getKeyIndex()
+BYTE *getPublicKey(INT keyIndex, INT *publicKeySize)
 {
-    return previousKeyIndex;
+    if (keyIndex == nextKeyIndex)
+    {
+        memcpy(publicKeySize, &nextKeySizeASN, sizeof(nextKeySizeASN));
+        return nextKeyASN;
+    }
+
+    else if (keyIndex == previousKeyIndex)
+    {
+        memcpy(publicKeySize, &previousKeySizeASN, sizeof(previousKeySizeASN));
+        return previousKeyASN;
+    }
+
+    else if (keyIndex == 0)
+    {
+        memcpy(publicKeySize, &rootKeySizeASN, sizeof(rootKeySizeASN));
+        return rootKeyASN;
+    }
+
+    else
+    {
+        Esys_FlushContext(esys_context, rootKeyHandle);
+        generatePublicKey(keyIndex);
+        Esys_FlushContext(esys_context, currentKeyHandle);
+
+        memcpy(tempKey, currentKeyASN, currentKeySizeASN);
+        memcpy(publicKeySize, &currentKeySizeASN, sizeof(currentKeySizeASN));
+
+        setRootKey();
+        return tempKey;
+    }
+}
+
+BYTE *signECDSA(INT keyIndex, BYTE *hashToSign, INT *eccSignSize)
+{
+
+    TPM2B_DIGEST hashTPM = {.size = 32};
+    memcpy(hashTPM.buffer, hashToSign, 32);
+
+    TPMT_SIG_SCHEME inScheme = {.scheme = TPM2_ALG_NULL};
+
+    TPMT_TK_HASHCHECK hash_validation = {
+        .tag = TPM2_ST_HASHCHECK,
+        .hierarchy = TPM2_RH_ENDORSEMENT,
+        .digest = {0}};
+
+    TPMT_SIGNATURE *signature = NULL;
+
+    ESYS_TR signingKeyHandle = ESYS_TR_NONE;
+
+    if (keyIndex == 0)
+    {
+        signingKeyHandle = rootKeyHandle;
+    }
+
+    else if (keyIndex != previousKeyIndex)
+    {
+        setKeyIndex(keyIndex);
+        signingKeyHandle = previousKeyHandle;
+    }
+
+    else
+        signingKeyHandle = previousKeyHandle;
+
+    rc = Esys_Sign(esys_context, signingKeyHandle, ESYS_TR_PASSWORD, ESYS_TR_NONE, ESYS_TR_NONE,
+                   &hashTPM, &inScheme, &hash_validation, &signature);
+    if (keyIndex)
+        updateHandlesIndexes();
+
+    INT asnSignSize = 0;
+    BYTE *asnsign = signToASN(signature->signature.ecdsa.signatureR.buffer,
+                              signature->signature.ecdsa.signatureR.size,
+                              signature->signature.ecdsa.signatureS.buffer,
+                              signature->signature.ecdsa.signatureS.size,
+                              &asnSignSize);
+    memcpy(eccSignSize, &asnSignSize, sizeof(asnSignSize));
+    Esys_Free(signature);
+    return asnsign;
 }

@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <time.h>
 #include "uniris-tpm.h"
 
@@ -37,14 +38,13 @@ void main()
         }
         printf("\nAfter Sign Key Index: %d", getKeyIndex());
 
-        asnkey = getPublicKey(i+1, &publicKeySize);
+        asnkey = getPublicKey(i + 1, &publicKeySize);
         printf("\n\nNext Key = \n");
         for (int v = 0; v < publicKeySize; v++)
         {
             printf("%02x", asnkey[v]);
         }
-    printf("\n----------------------------------------------------------------------");
-
+        printf("\n----------------------------------------------------------------------");
     }
     printf("\n");
 }
