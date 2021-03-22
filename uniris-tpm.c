@@ -1,4 +1,38 @@
+#include <tss2/tss2_esys.h>
 #include "uniris-tpm.h"
+
+#define ASN1_SEQ 0x30
+#define ASN1_INT 0x02
+#define ASN1_OID 0x06
+#define ASN1_BitString 0x03
+#define PRIME_LEN 32
+#define ANS1_MAX_KEY_SIZE 4 + 9 + 10 + 4 + PRIME_LEN + PRIME_LEN
+
+static ESYS_CONTEXT *esys_context;
+int rc;
+
+static BYTE tempKey[ANS1_MAX_KEY_SIZE];
+static ESYS_TR rootKeyHandle;
+static BYTE rootKeyASN[ANS1_MAX_KEY_SIZE];
+static INT rootKeySizeASN;
+static BYTE rootKeyHash[PRIME_LEN];
+
+static ESYS_TR previousKeyHandle;
+static BYTE previousKeyASN[ANS1_MAX_KEY_SIZE];
+static INT previousKeySizeASN;
+static INT previousKeyIndex;
+
+static ESYS_TR nextKeyHandle;
+static BYTE nextKeyASN[ANS1_MAX_KEY_SIZE];
+static INT nextKeySizeASN;
+static INT nextKeyIndex;
+
+static ESYS_TR currentKeyHandle;
+static TPM2B_PUBLIC *currentKeyTPM = NULL;
+static BYTE currentKeyASN[ANS1_MAX_KEY_SIZE];
+static INT currentKeySizeASN;
+
+BYTE sigEccASN[2 + 2 + PRIME_LEN + 2 + PRIME_LEN + 2];
 
 void initializeTPM(INT keyIndex)
 {
@@ -44,6 +78,7 @@ void keyToASN()
     index += size_x_y;
 
     currentKeySizeASN = index;
+    //Esys_Free(currentKeyTPM);
 }
 
 BYTE *signToASN(BYTE *r, INT sizeR, BYTE *s, INT sizeS, INT *asnSignSize)
@@ -135,6 +170,7 @@ BYTE *signECDSA(INT keyIndex, BYTE *hashToSign, INT *eccSignSize)
                               signature->signature.ecdsa.signatureS.size,
                               &asnSignSize);
     memcpy(eccSignSize, &asnSignSize, sizeof(asnSignSize));
+    Esys_Free(signature);
     return asnsign;
 }
 
@@ -181,7 +217,6 @@ BYTE *getPublicKey(INT keyIndex, INT *publicKeySize)
         generatePublicKey(keyIndex);
         Esys_FlushContext(esys_context, currentKeyHandle);
 
-        BYTE *tempKey = malloc(ANS1_MAX_KEY_SIZE);
         memcpy(tempKey, currentKeyASN, currentKeySizeASN);
         memcpy(publicKeySize, &currentKeySizeASN, sizeof(currentKeySizeASN));
 
@@ -259,6 +294,11 @@ void generatePublicKey(INT keyIndex)
         exit(1);
     }
 
+    Esys_Free(creationData);
+    Esys_Free(creationHash);
+    Esys_Free(creationTicket);
+    
+
     keyToASN();
 }
 
@@ -281,6 +321,9 @@ void setRootKey()
 
     Esys_Hash(esys_context, ESYS_TR_NONE, ESYS_TR_NONE, ESYS_TR_NONE, &data, TPM2_ALG_SHA256, ESYS_TR_RH_OWNER, &creationHash, &hashTicket);
     memcpy(rootKeyHash, creationHash, 32);
+
+    Esys_Free(hashTicket);
+    Esys_Free(creationHash);
 }
 
 void setKeyIndex(INT keyIndex)
