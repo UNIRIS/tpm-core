@@ -69,7 +69,7 @@ void keyToASN()
     //Esys_Free(currentKeyTPM);
 }
 
-BYTE *signToASN(BYTE *r, INT sizeR, BYTE *s, INT sizeS, INT *asnSignSize)
+void signToASN(BYTE *r, INT sizeR, BYTE *s, INT sizeS, INT *asnSignSize)
 {
 
     int index = 0;
@@ -112,7 +112,7 @@ BYTE *signToASN(BYTE *r, INT sizeR, BYTE *s, INT sizeS, INT *asnSignSize)
 
     *asnSignSize = index;
 
-    return sigEccASN;
+    //return sigEccASN;
 }
 
 void generatePublicKey(INT keyIndex)
@@ -353,12 +353,12 @@ BYTE *signECDSA(INT keyIndex, BYTE *hashToSign, INT *eccSignSize)
         updateHandlesIndexes();
 
     INT asnSignSize = 0;
-    BYTE *asnsign = signToASN(signature->signature.ecdsa.signatureR.buffer,
-                              signature->signature.ecdsa.signatureR.size,
-                              signature->signature.ecdsa.signatureS.buffer,
-                              signature->signature.ecdsa.signatureS.size,
-                              &asnSignSize);
+    signToASN(signature->signature.ecdsa.signatureR.buffer,
+              signature->signature.ecdsa.signatureR.size,
+              signature->signature.ecdsa.signatureS.buffer,
+              signature->signature.ecdsa.signatureS.size,
+              &asnSignSize);
     memcpy(eccSignSize, &asnSignSize, sizeof(asnSignSize));
     Esys_Free(signature);
-    return asnsign;
+    return sigEccASN;
 }
