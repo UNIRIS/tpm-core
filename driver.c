@@ -19,7 +19,7 @@ void main()
     //time_taken = ((double)t) / CLOCKS_PER_SEC; // in seconds
     //printf("\ngetPublicKey() took %f seconds to execute \n", time_taken);
 
-    for (int i = 1; i <= 3; i++)
+    for (int i = 1; i <= 4; i++)
     {
 
         asnkey = getPublicKey(i, &publicKeySize);

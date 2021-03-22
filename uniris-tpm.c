@@ -11,7 +11,6 @@
 static ESYS_CONTEXT *esys_context;
 int rc;
 
-static BYTE tempKey[ANS1_MAX_KEY_SIZE];
 static ESYS_TR rootKeyHandle;
 static BYTE rootKeyASN[ANS1_MAX_KEY_SIZE];
 static INT rootKeySizeASN;
@@ -32,7 +31,8 @@ static TPM2B_PUBLIC *currentKeyTPM = NULL;
 static BYTE currentKeyASN[ANS1_MAX_KEY_SIZE];
 static INT currentKeySizeASN;
 
-BYTE sigEccASN[2 + 2 + PRIME_LEN + 2 + PRIME_LEN + 2];
+static BYTE tempKey[ANS1_MAX_KEY_SIZE];
+static BYTE sigEccASN[2 + 2 + PRIME_LEN + 2 + PRIME_LEN + 2];
 
 void initializeTPM(INT keyIndex)
 {
@@ -298,8 +298,11 @@ void generatePublicKey(INT keyIndex)
     Esys_Free(creationHash);
     Esys_Free(creationTicket);
     
-
     keyToASN();
+    if(keyIndex)
+        Esys_Free(currentKeyTPM);
+
+
 }
 
 void setRootKey()
@@ -324,6 +327,7 @@ void setRootKey()
 
     Esys_Free(hashTicket);
     Esys_Free(creationHash);
+    Esys_Free(currentKeyTPM);
 }
 
 void setKeyIndex(INT keyIndex)
