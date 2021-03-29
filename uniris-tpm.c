@@ -316,7 +316,7 @@ BYTE *getPublicKey(INT keyIndex, INT *publicKeySize)
     }
 }
 
-BYTE *signECDSA(INT keyIndex, BYTE *hashToSign, INT *eccSignSize)
+BYTE *signECDSA(INT keyIndex, BYTE *hashToSign, INT *eccSignSize, bool increment)
 {
 
     TPM2B_DIGEST hashTPM = {.size = 32};
@@ -349,7 +349,7 @@ BYTE *signECDSA(INT keyIndex, BYTE *hashToSign, INT *eccSignSize)
 
     rc = Esys_Sign(esys_context, signingKeyHandle, ESYS_TR_PASSWORD, ESYS_TR_NONE, ESYS_TR_NONE,
                    &hashTPM, &inScheme, &hash_validation, &signature);
-    if (keyIndex)
+    if (keyIndex && increment)
         updateHandlesIndexes();
 
     INT asnSignSize = 0;
