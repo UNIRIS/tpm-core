@@ -30,7 +30,7 @@ void main()
             printf("%02x", asnkey[v]);
         }
         printf("\n\nSign Key Index: %d", getKeyIndex());
-        eccSign = signECDSA(5, hash256, &signLen, true);
+        eccSign = signECDSA(i, hash256, &signLen, true);
         printf("\nECC Sign (ASN.1 DER) = \n");
         for (int v = 0; v < signLen; v++)
         {
