@@ -42,7 +42,19 @@ TPMPort.initialize_tpm(KEY_INDEX)
 
 ```console
 TPMPort.get_public_key(KEY_INDEX)
-sign_ecdsa(KEY_INDEX, HASH_SHA256)
+TPMPort.sign_ecdsa(KEY_INDEX, HASH_SHA256)
 TPMPort.get_key_index()
 TPMPort.set_key_index(KEY_INDEX)
+```
+
+## Testing
+
+```console
+sudo iex tpm-lib.ex
+TPMPort.start_link
+TPMPort.initialize_tpm(10)
+key = TPMPort.get_public_key(10)
+hash256 = :crypto.hash(:sha256, "UNIRIS")
+sign = TPMPort.sign_ecdsa(10, hash256)
+:crypto.verify(:ecdsa, :sha256, "UNIRIS", sign, [key, :secp256r1])
 ```

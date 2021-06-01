@@ -113,7 +113,7 @@ void sign_ecdsa(unsigned char *buf, int pos, int len)
         BYTE *eccSign;
         INT signLen = 0;
 
-        eccSign = signECDSA(index_int, hash256, &signLen, true);
+        eccSign = signECDSA(index_int, hash256, &signLen, false);
 
         int response_len = 5 + signLen;
         unsigned char *response = (unsigned char *)malloc(response_len);

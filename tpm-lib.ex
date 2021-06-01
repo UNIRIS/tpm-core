@@ -14,14 +14,16 @@ defmodule TPMPort do
   end
 
   def get_public_key(index) do
-    #{:ok, <<_::binary-size(26), key::binary>>} = GenServer.call(__MODULE__, {:get_public_key, index})
-    {:ok, <<key::binary>>} = GenServer.call(__MODULE__, {:get_public_key, index})
-    Base.encode16(key)
+    {:ok, <<_::binary-size(26), key::binary>>} = GenServer.call(__MODULE__, {:get_public_key, index})
+    #{:ok, <<key::binary>>} = GenServer.call(__MODULE__, {:get_public_key, index})
+    #Base.encode16(key)
+    key
   end
 
   def sign_ecdsa(index, <<data::binary-size(32)>>) do
    {:ok, <<sign::binary>>} = GenServer.call(__MODULE__, {:sign_ecdsa, index, data})
-   Base.encode16(sign)
+   #Base.encode16(sign)
+   sign
   end
 
   def get_key_index() do
