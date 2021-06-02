@@ -1,3 +1,11 @@
+/*  Compile:
+    gcc sk_gen.c -o sk_gen uniris-tpm.c -ltss2-esys -lcrypto
+
+    Verify:
+    sudo ./sk_gen
+    xxd -p $file_name.bin | tr -d '\n'
+*/
+
 #include <stdio.h>
 #include <openssl/sha.h>
 #include "uniris-tpm.h"
@@ -52,6 +60,7 @@ void main()
     }
     snprintf(file_name + 64, 5, ".bin");
     printf("\n\n Filename = %s", file_name);
+
     FILE *write_ptr;
     write_ptr = fopen(file_name, "wb"); // w for write, b for binary
     fwrite(eccSign, signLen, 1, write_ptr);
