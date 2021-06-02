@@ -3,3 +3,5 @@ uniris-tpm
 examples/generate-ek
 examples/ecc-sign-verify
 support
+a6bf821b468c86187f8ea2ff0f35a0504795faf5357a30c4258b9034f8d58e3d.bin
+sk_gen
