@@ -16,7 +16,7 @@ void main()
     INT publicKeySize = 0;
     BYTE *asnkey;
 
-    for (int z = 0; z < 50; z++)
+    for (int z = 0; z < 500; z++)
     {
         asnkey = getPublicKey(z, &publicKeySize);
         for (int v = 26; v < publicKeySize; v++)
