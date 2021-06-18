@@ -1,6 +1,6 @@
 #/bin/bash
 
-#assumes Elixir and Erlang are alaredy installed on the system
+#assumes Elixir and Erlang are already installed on the system
 mkdir tpm
 cd tpm
 
