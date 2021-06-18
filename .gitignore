@@ -8,3 +8,4 @@ keygen/keygen
 keygen/keys.txt
 keygen/uniris-ca-pub-key.pem
 keygen/uniris-ca.pem
+examples/ecdh
