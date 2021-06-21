@@ -41,4 +41,9 @@ cd ..
 git clone https://github.com/UNIRIS/tpm-core.git
 cd tpm-core
 gcc support.c -o support stdio_helpers.c uniris-tpm.c -ltss2-esys
-cd ../..
+cd keygen
+gcc keygen.c -o keygen ../uniris-tpm.c -ltss2-esys -lcrypto
+FILENAME=`cat /sys/class/net/eno1/address`
+echo "Generating Keys -- It may take 3-4 minutes"
+./keygen > "$FILENAME"
+echo "Done!"
