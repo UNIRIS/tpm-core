@@ -23,7 +23,8 @@ sudo apt -y install \
   doxygen \
   libjson-c-dev \
   libini-config-dev \
-  libcurl4-openssl-dev
+  libcurl4-openssl-dev \
+  acl
 
 git clone https://github.com/tpm2-software/tpm2-tss.git
 cd tpm2-tss
