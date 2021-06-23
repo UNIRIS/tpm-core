@@ -33,7 +33,7 @@ cd tpm2-tss
 make -j$(nproc)
 
 sudo make install
-sudo sed -i 's/tss/uniris/gi' /etc/udev/rules.d/tpm-udev.rules
+sudo sed -i "s/tss/$(whoami)/gi" /etc/udev/rules.d/tpm-udev.rules
 sudo udevadm control --reload-rules && sudo udevadm trigger
 sudo ldconfig
 sudo apt install tpm2-tools
