@@ -35,6 +35,10 @@ defmodule TPMPort do
     GenServer.call(__MODULE__, {:set_key_index, index})
   end
 
+  def get_ecdh_point(index, <<data::binary-size(65)>>) do
+   {:ok, <<header::binary-size(1), z_x::binary-size(32), z_y::binary-size(32)>>} = GenServer.call(__MODULE__, {:get_ecdh_point, index, data})
+   z_x
+  end
 
   # Server calls
   def init(_opts) do
@@ -74,6 +78,12 @@ defmodule TPMPort do
     {id, state} = send_request(state, 5, <<index::16>>)
     {:noreply, %{state | awaiting: Map.put(state.awaiting, id, from)}}
   end
+
+  def handle_call({:get_ecdh_point, index, data}, from, state) do
+    {id, state} = send_request(state, 6, <<index::16, data::binary>>)
+    {:noreply, %{state | awaiting: Map.put(state.awaiting, id, from)}}
+  end
+
 
   def handle_info({_port, {:data, <<req_id::32, response::binary>>} = _data}, state) do
     case state.awaiting[req_id] do

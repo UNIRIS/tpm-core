@@ -53,8 +53,11 @@ TPMPort.set_key_index(KEY_INDEX)
 sudo iex tpm-lib.ex
 TPMPort.start_link
 TPMPort.initialize_tpm(10)
-key = TPMPort.get_public_key(10)
+public_key = TPMPort.get_public_key(10)
 hash256 = :crypto.hash(:sha256, "UNIRIS")
 sign = TPMPort.sign_ecdsa(10, hash256)
-:crypto.verify(:ecdsa, :sha256, "UNIRIS", sign, [key, :secp256r1])
+:crypto.verify(:ecdsa, :sha256, "UNIRIS", sign, [public_key, :secp256r1])
+{eph_pub, eph_pv} = :crypto.generate_key(:ecdh, :secp256r1)
+:crypto.compute_key(:ecdh, public_key, eph_pv, :secp256r1) 
+TPMPort.get_ecdh_point(10, eph_pub) 
 ```

@@ -411,8 +411,12 @@ BYTE *getECDHPoint(INT keyIndex, BYTE *euphemeralKey)
     memcpy(zPoint + 1, zPointTPM->point.x.buffer, PRIME_LEN);
     memcpy(zPoint + 1 + PRIME_LEN, zPointTPM->point.y.buffer, PRIME_LEN);
 
-    Esys_FlushContext(esys_context, currentKeyHandle);
+    if (currentKeyHandle != ESYS_TR_NONE)
+    {
+        Esys_FlushContext(esys_context, currentKeyHandle);
+        setRootKey();
+    }
+
     Esys_Free(zPointTPM);
-    setRootKey();
     return zPoint;
 }
