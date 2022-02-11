@@ -1,5 +1,22 @@
+/*******************************************************************************
+ *   Archethic TPM Library
+ *   (c) 2021 Varun Deshpande, Uniris
+ *
+ *  Licensed under the GNU Affero General Public License, Version 3 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      https://www.gnu.org/licenses/agpl-3.0.en.html
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ ********************************************************************************/
+
 /* Creates a primary ECC key with default EK template
-   and returns the URL-safe base64-encoded SHA256-hash of the EK Public Key 
+   and returns the URL-safe base64-encoded SHA256-hash of the EK Public Key
    Executes:
    Esys_Initialize()
    Esys_StartAuthSession()
@@ -24,10 +41,10 @@ BYTE *base64url_encode(BYTE *src, INT len, INT *out_len)
     BYTE *out, *pos, *end, *in;
     INT olen;
 
-    olen = len * 4 / 3 + (2 + 2 * 3);   /* 3-byte blocks to 4-byte */
-    olen++;                             /* null termination */
+    olen = len * 4 / 3 + (2 + 2 * 3); /* 3-byte blocks to 4-byte */
+    olen++;                           /* null termination */
     if (olen < len)
-        return NULL;                    /* integer overflow */
+        return NULL; /* integer overflow */
     out = malloc(olen);
     if (out == NULL)
         return NULL;
@@ -176,7 +193,7 @@ int main()
     memcpy(data.buffer, (*outPublic).publicArea.unique.ecc.x.buffer, 32);
     memcpy(data.buffer + 32, (*outPublic).publicArea.unique.ecc.y.buffer, 32);
 
-    //Esys_TR_GetName
+    // Esys_TR_GetName
     r = Esys_Hash(esys_context, ESYS_TR_NONE, ESYS_TR_NONE, ESYS_TR_NONE, &data, TPM2_ALG_SHA256, ESYS_TR_RH_OWNER, &creationHash, &hashTicket);
 
     if (r != TSS2_RC_SUCCESS)

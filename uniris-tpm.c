@@ -1,3 +1,20 @@
+/*******************************************************************************
+ *   Archethic TPM Library
+ *   (c) 2021 Varun Deshpande, Uniris
+ *
+ *  Licensed under the GNU Affero General Public License, Version 3 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      https://www.gnu.org/licenses/agpl-3.0.en.html
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ ********************************************************************************/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -67,7 +84,7 @@ void keyToASN()
     index += size_x_y;
 
     currentKeySizeASN = index;
-    //Esys_Free(currentKeyTPM);
+    // Esys_Free(currentKeyTPM);
 }
 
 void signToASN(BYTE *r, INT sizeR, BYTE *s, INT sizeS, INT *asnSignSize)
@@ -82,8 +99,8 @@ void signToASN(BYTE *r, INT sizeR, BYTE *s, INT sizeS, INT *asnSignSize)
     if (s[0] > 127) // check MSB, S needs padding to remain positive
         asnLen++;
     /*
-	if(asnLen > 127)
-		sigEccASN[index++] = 0x81;
+    if(asnLen > 127)
+        sigEccASN[index++] = 0x81;
     */
     sigEccASN[index++] = asnLen;
 
@@ -113,7 +130,7 @@ void signToASN(BYTE *r, INT sizeR, BYTE *s, INT sizeS, INT *asnSignSize)
 
     *asnSignSize = index;
 
-    //return sigEccASN;
+    // return sigEccASN;
 }
 
 void generatePublicKey(INT keyIndex)

@@ -1,4 +1,20 @@
 #!/usr/bin/env python3
+"""*******************************************************************************
+ *   Archethic TPM Library
+ *   (c) 2021 Varun Deshpande, Uniris
+ *
+ *  Licensed under the GNU Affero General Public License, Version 3 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      https://www.gnu.org/licenses/agpl-3.0.en.html
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ ********************************************************************************"""
 
 import collections
 import hashlib
@@ -17,7 +33,8 @@ curve = EllipticCurve(
     a=0xffffffff00000001000000000000000000000000fffffffffffffffffffffffc,
     b=0x5ac635d8aa3a93e7b3ebbd55769886bc651d06b0cc53b0f63bce3c3e27d2604b,
     # Base point.
-    g=(0x6b17d1f2e12c4247f8bce6e563a440f277037d812deb33a0f4a13945d898c296, 0x4fe342e2fe1a7f9b8ee7eb4a7c0f9e162bce33576b315ececbb6406837bf51f5),
+    g=(0x6b17d1f2e12c4247f8bce6e563a440f277037d812deb33a0f4a13945d898c296,
+       0x4fe342e2fe1a7f9b8ee7eb4a7c0f9e162bce33576b315ececbb6406837bf51f5),
     # Subgroup order.
     n=0xffffffff00000000ffffffffffffffffbce6faada7179e84f3b9cac2fc632551,
     # Subgroup cofactor.
@@ -183,6 +200,7 @@ def hash_message(message):
     assert z.bit_length() <= curve.n.bit_length()
     return z
 
+
 def sign_message(private_key, message):
     z = hash_message(message)
 
@@ -231,8 +249,9 @@ msg = "UNIRIS".encode('utf')
 # print('Signature: (0x{:x}{:x})'.format(*signature))
 # print('Verification signature:', verify_signature(public, msg, signature))
 
-public_key = (0x5c7c09b462e24790f9d040929b31476b2d6133fbac54c1b11cff877b8d9339da, 0x7f2927b5a745262c4fd8a7077ff5f31520df50462a59c251ee60d39aaf1ffaec)
-signature2 = (0x8cf58081aa327e99a487774236f81b989d0e16542988f08f7c12bedde1dbf8e8, 0x73414dddc44318d0810bab71fc9fb640379ca1e4f0713d177a7402625ca076fe)
+public_key = (0x5c7c09b462e24790f9d040929b31476b2d6133fbac54c1b11cff877b8d9339da,
+              0x7f2927b5a745262c4fd8a7077ff5f31520df50462a59c251ee60d39aaf1ffaec)
+signature2 = (0x8cf58081aa327e99a487774236f81b989d0e16542988f08f7c12bedde1dbf8e8,
+              0x73414dddc44318d0810bab71fc9fb640379ca1e4f0713d177a7402625ca076fe)
 
 print('Verification signature:', verify_signature(public_key, msg, signature2))
-

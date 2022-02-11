@@ -1,5 +1,24 @@
+"""/*******************************************************************************
+ *   Archethic TPM Library
+ *   (c) 2021 Varun Deshpande, Uniris
+ *
+ *  Licensed under the GNU Affero General Public License, Version 3 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      https://www.gnu.org/licenses/agpl-3.0.en.html
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ ********************************************************************************/"""
+
+
 # pycryptodome required: sudo pip install pycryptodome
-import os, shutil
+import os
+import shutil
 from Crypto.PublicKey import ECC
 from Crypto.Hash import SHA256
 from Crypto.Signature import DSS
@@ -20,9 +39,11 @@ for root, dirs, files in os.walk('keys', topdown=False):
             uniris_ca = DSS.new(signing_key, 'fips-186-3', 'der')
             mini_certificate = uniris_ca.sign(key_hash)
 
-            f = open('certificates/'+key_file+'/'+key_hash.hexdigest()+'.bin', 'wb')
+            f = open('certificates/'+key_file+'/' +
+                     key_hash.hexdigest()+'.bin', 'wb')
             f.write(mini_certificate)
             f.close()
-        
-        shutil.make_archive('certificates/'+key_file, 'zip', 'certificates/'+key_file)
+
+        shutil.make_archive('certificates/'+key_file,
+                            'zip', 'certificates/'+key_file)
         shutil.rmtree('certificates/'+key_file)
